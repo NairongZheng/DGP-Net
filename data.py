@@ -141,8 +141,8 @@ class self_DataLoader(Dataset):
 
             train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True)
             for i, (data, label) in enumerate(train_loader):
-                label = label.item()
-                data = data.squeeze(0)
+                label = label.item()        # [1]
+                data = data.squeeze(0)      # [1, 100, 100]
                 if label in few_selected_label:
                     data_dict = few_data_dict
                 else:
@@ -280,7 +280,7 @@ class self_DataLoader(Dataset):
         for i in range(batch_size):
 
             # sample the class to train
-            sampled_classes = random.sample(data_dict.keys(), nway)
+            sampled_classes = random.sample(data_dict.keys(), nway)     # 随机选了nway的来训练
 
             positive_class = random.randint(0, nway - 1)
 

@@ -13,7 +13,7 @@ from maml import MetaLearner
 from cnn import EmbeddingCNN
 from cnn import myModel
 
-from resnet_cbam import ResNet
+# from resnet_cbam import ResNet
 from senet import SEResNet
 
 def np2cuda(array):
@@ -42,7 +42,7 @@ class GNN(myModel):
             feature_type='dense')  # forward
 
     def forward(self, inputs):
-        logits = self.gnn_obj(inputs).squeeze(-1)
+        logits = self.gnn_obj(inputs).squeeze(-1)       # [b, nway]
 
         return logits
       
@@ -59,19 +59,8 @@ class gnnModel(myModel):
 
         gnn_feature_size = 32
 
-        # self.MLT = MetaLearner(0.0001, 0.01, 32, self.nway, self.shots)
-        # self.MLT.load_model()
-        #
-        # self.cnn_feature = self.MLT.model
-
-        # self.cnn_feature = ResNet()
-        # self.cnn_feature = SEResNet()
         self.cnn_feature = EmbeddingCNN(image_size, cnn_feature_size, cnn_hidden_dim, cnn_num_layers)
 
-        # cnn_feature_ = EmbeddingCNN(image_size, cnn_feature_size, cnn_hidden_dim, cnn_num_layers)
-        # self.cnn_feature = [cnn_feature_ for x in range(self.batchsize)]
-        # for i in range(batchsize):
-        #     self.cnn_feature[i] = self.cnn_feature[i].cuda()
 
         self.gnn = GNN(cnn_feature_size, gnn_feature_size, nway)
 
@@ -79,188 +68,29 @@ class gnnModel(myModel):
         # self.cnn_feature.freeze_weight()
         # for i in range(self.batchsize):
         #     self.cnn_feature[i].freeze_weight()
-        [x, _, _, _, xi, label_yi, one_hot_yi, _] = data
+        [x, _, _, _, xi, label_yi, one_hot_yi, _] = data    # x[b, c, 100, 100]; xi[b, nway, c, 100, 100]; label_yi[b, nway]; one_hot_yi[b, 3, 3]
 
-        z = self.cnn_feature(x)
-        # z = self.cnn_feature(x).repeat(1, 2)
-        # print(z.size())
-        # torch.Size([16, 64])
+        z = self.cnn_feature(x)     # [b, 64]
+        zi = [self.cnn_feature(xi[:, i, :, :, :]) for i in range(xi.size(1))]   # zi_i[b, 64]
 
-        # z = [self.cnn_feature[i](x[i, :, :, :].unsqueeze(0).repeat(2, 1, 1, 1))[0]for i in range(self.batchsize)]
-        # z = torch.stack(z, dim=0)
-        # # print(z.size())
-        # # torch.Size([16, 64])
-
-        # zi_s = [0 for x in range(xi.size(0))]
-        # xi_sum = [xi[i, :, :, :, :] for i in range(xi.size(0))]
-        # for j in range(xi.size(0)):
-        #     zi_s[j] = [self.cnn_feature(xi_sum[j][i, :, :, :].unsqueeze(0)).squeeze(0) for i in range(xi.size(1))]
-        #     zi_s[j] = torch.stack(zi_s[j], dim=0)
-        # zi_s = torch.stack(zi_s, dim=0)
-        # # print(zi_s.size())
-        # # torch.Size([16, 5, 64])
-
-        # zi_s = [0 for x in range(self.batchsize)]
-        # xi_sum = [xi[i, :, :, :, :] for i in range(self.batchsize)]
-        # for j in range(self.batchsize):
-        #     zi_s[j] = self.cnn_feature[j](xi_sum[j])
-        # zi_s = torch.stack(zi_s, dim=0)
-        # # print(zi_s.size())
-        # # torch.Size([16, 5, 64])
-
-        zi = [self.cnn_feature(xi[:, i, :, :, :]) for i in range(xi.size(1))]
-
-        zi = torch.stack(zi, dim=1)
-        # print(zi.size())
-        # torch.Size([16, nway*shots, 64])
-
-        # # 加原型节点
-        # if self.shots != 1:
-        #     w_s = self.nway*self.shots
-        #     zi_s = [zi[i, :, :] for i in range(self.batchsize)]
-        #     label_yi_s = [label_yi[i, :] for i in range(self.batchsize)]
-        #     one_hot_yi_s = [one_hot_yi[i, :, :] for i in range(self.batchsize)]
-        #     for i in range(self.batchsize):
-        #         zi_s[i] = [zi_s[i][j, :] for j in range(w_s)]
-        #         label_yi_s[i] = [label_yi_s[i][j] for j in range(w_s)]
-        #         one_hot_yi_s[i] = [one_hot_yi_s[i][j, :] for j in range(w_s)]
-        #         for k in range(self.nway):
-        #             one_hot = torch.zeros(self.nway)
-        #             one_hot[k] = 1.0
-        #             one_hot = tensor2cuda(one_hot)
-        #             zi_p = tensor2cuda(torch.zeros(64))
-        #             # label = torch.tensor(k)
-        #             for l in range(w_s):
-        #                 if label_yi_s[i][l] == k:
-        #                     zi_p = zi_p + zi_s[i][l]
-        #                     # print(zi_s[i][l])
-        #                     # print(zi_p)
-        #             zi_p_ave = zi_p.divide(self.shots)
-        #             zi_s[i].append(zi_p_ave)
-        #             one_hot_yi_s[i].append(one_hot)
-        #             # label_yi_s[i].append(label)
-        #         zi_s[i] = torch.stack(zi_s[i], dim=0)
-        #         # label_yi_s[i] = torch.stack(label_yi_s[i], dim=0)
-        #         one_hot_yi_s[i] = torch.stack(one_hot_yi_s[i], dim=0)
-        #     zi = torch.stack(zi_s, dim=0)
-        #     # label_yi = torch.stack(label_yi_s, dim=0)
-        #     one_hot_yi = torch.stack(one_hot_yi_s, dim=0)
-
-        # 仅原型节点
-        # if self.shots != 1:
-        #     w_s = self.nway * self.shots
-        #     zi_s = [zi[i, :, :] for i in range(self.batchsize)]
-        #     label_yi_s = [label_yi[i, :] for i in range(self.batchsize)]
-        #     one_hot_yi_s = [one_hot_yi[i, :, :] for i in range(self.batchsize)]
-        #     for i in range(self.batchsize):
-        #         zi_s[i] = [zi_s[i][j, :] for j in range(w_s)]
-        #         label_yi_s[i] = [label_yi_s[i][j] for j in range(w_s)]
-        #         one_hot_yi_s[i] = [one_hot_yi_s[i][j, :] for j in range(w_s)]
-        #         for k in range(self.nway):
-        #             one_hot = torch.zeros(self.nway)
-        #             one_hot[k] = 1.0
-        #             one_hot = tensor2cuda(one_hot)
-        #             zi_p = tensor2cuda(torch.zeros(64))
-        #             # label = torch.tensor(k)
-        #             for l in range(w_s):
-        #                 if label_yi_s[i][l] == k:
-        #                     zi_p = zi_p + zi_s[i][l]
-        #                     # print(zi_s[i][l])
-        #                     # print(zi_p)
-        #             zi_p_ave = zi_p.divide(self.shots)
-        #             zi_s[i].append(zi_p_ave)
-        #             one_hot_yi_s[i].append(one_hot)
-        #             # label_yi_s[i].append(label)
-        #         zi_s[i] = torch.stack(zi_s[i], dim=0)
-        #         zi_s[i] = zi_s[i][w_s:]
-        #
-        #         # label_yi_s[i] = torch.stack(label_yi_s[i], dim=0)
-        #         one_hot_yi_s[i] = torch.stack(one_hot_yi_s[i], dim=0)
-        #         one_hot_yi_s[i] = one_hot_yi_s[i][w_s:]
-        #
-        #     zi = torch.stack(zi_s, dim=0)
-        #     # label_yi = torch.stack(label_yi_s, dim=0)
-        #     one_hot_yi = torch.stack(one_hot_yi_s, dim=0)
-
-        # 加原型特征
-        # w_s = self.nway * self.shots
-        # zi_s = [zi[i, :, :] for i in range(self.batchsize)]
-        # label_yi_s = [label_yi[i, :] for i in range(self.batchsize)]
-        # for i in range(self.batchsize):
-        #     zi_s[i] = [zi_s[i][j, :] for j in range(w_s)]
-        #     label_yi_s[i] = [label_yi_s[i][j] for j in range(w_s)]
-        #     for k in range(self.nway):
-        #         zi_p = tensor2cuda(torch.zeros(64))
-        #         for l in range(w_s):
-        #             if label_yi_s[i][l] == k:
-        #                 zi_p = zi_p + zi_s[i][l]
-        #         for l in range(w_s):
-        #             if label_yi_s[i][l] == k:
-        #                 zi_s[i][l] = torch.cat([zi_s[i][l], zi_p], dim=0)
-        #     zi_s[i] = torch.stack(zi_s[i], dim=0)
-        # zi = torch.stack(zi_s, dim=0)
-
+        zi = torch.stack(zi, dim=1)     # zi[b, nway, 64]
 
         # follow the paper, concatenate the information of labels to input features
         uniform_pad = torch.FloatTensor(one_hot_yi.size(0), 1, one_hot_yi.size(2)).fill_(
             1.0/one_hot_yi.size(2))
-        uniform_pad = tensor2cuda(uniform_pad)
+        uniform_pad = tensor2cuda(uniform_pad)      # [b, 1, 3]
 
-        labels = torch.cat([uniform_pad, one_hot_yi], dim=1)
+        labels = torch.cat([uniform_pad, one_hot_yi], dim=1)    # [b, 4, 3]
         features = torch.cat([z.unsqueeze(1), zi], dim=1)
 
-        # print(features.size(), labels.size())
-        # torch.Size([16, 6, 64]) torch.Size([16, 6, 5])
-        nodes_features = torch.cat([features, labels], dim=2)
+        nodes_features = torch.cat([features, labels], dim=2)   # [b, 4, 67]
 
-        out_logits = self.gnn(inputs=nodes_features)
-        logsoft_prob = F.log_softmax(out_logits, dim=1)
+        out_logits = self.gnn(inputs=nodes_features)            # [b, nway]
+        logsoft_prob = F.log_softmax(out_logits, dim=1)         # [b, nway]
 
-        # distance_batch = [0 for x in range(self.batchsize)]
-        # nodes_batch = [nodes_features[i, :, :] for i in range(self.batchsize)]
-        # for b in range(self.batchsize):
-        #     nodes = [nodes_batch[b][j, :] for j in range(self.nway+1)]
-        #     distance = [0 for x in range(self.nway)]
-        #     for i in range(self.nway):
-        #         distance[i] = F.pairwise_distance(nodes[0], nodes[i+1])
-        #     distance_batch[b] = torch.stack(distance, dim=0)
-        # distance_batch = torch.stack(distance_batch, dim=0)
-        # logsoft_prob = F.log_softmax(distance_batch, dim=1)
 
         return logsoft_prob
 
-    # def forward(self, data):
-    #     # self.eb.freeze_weight()
-    #     [x, _, _, _, xi, _, one_hot_yi, _] = data
-    #
-    #     z = self.cnn_feature(x)
-    #     # self.eb(x)
-    #     # z = self.eb.get_features()
-    #
-    #     # zi_s = []
-    #     # for i in range(xi.size(1)):
-    #     #     self.eb(xi[:, i, :, :, :])
-    #     #     zi_s.append(self.eb.get_features())
-    #     zi_s = [self.cnn_feature(xi[:, i, :, :, :]) for i in range(xi.size(1))]
-    #
-    #     zi_s = torch.stack(zi_s, dim=1)
-    #
-    #     # follow the paper, concatenate the information of labels to input features
-    #     uniform_pad = torch.FloatTensor(one_hot_yi.size(0), 1, one_hot_yi.size(2)).fill_(
-    #         1.0 / one_hot_yi.size(2))
-    #     uniform_pad = tensor2cuda(uniform_pad)
-    #
-    #     labels = torch.cat([uniform_pad, one_hot_yi], dim=1)
-    #     features = torch.cat([z.unsqueeze(1), zi_s], dim=1)
-    #
-    #     # print(features.size(), labels.size())
-    #     # torch.Size([16, 6, 64]) torch.Size([16, 6, 5])
-    #     nodes_features = torch.cat([features, labels], dim=2)
-    #
-    #     out_logits = self.gnn(inputs=nodes_features)
-    #     logsoft_prob = F.log_softmax(out_logits, dim=1)
-    #
-    #     return logsoft_prob
 
     def initialize_cnn(self, train, classes_list):
         for i in range(self.batchsize):
@@ -358,7 +188,7 @@ class Trainer():
 
         self.opt.zero_grad()
         # self.model.initialize_cnn(train=True, classes_list=list_classes)
-        logsoft_prob = self.model(data_cuda)  # size[16,5]
+        logsoft_prob = self.model(data_cuda)  # size[16,5]      # [b, nway]
 
         # print('pred', torch.argmax(logsoft_prob, dim=1))
         # print('label', data[2])

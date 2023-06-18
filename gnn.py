@@ -50,7 +50,7 @@ class Adjacency_layer(nn.Module):
         #  多层神经网络MLP，计算两顶点之间的相似度
         self.module_list = nn.ModuleList(module_list)
 
-    def forward(self, x):
+    def forward(self, x):       # [b, 4, 67]
         X_i = x.unsqueeze(2)  # (b, N , 1, input_dim)  在第2个维度上增加一个维度
         X_j = torch.transpose(X_i, 1, 2)  # (b, 1, N, input_dim)
 
@@ -68,7 +68,7 @@ class Adjacency_layer(nn.Module):
 
         A = F.softmax(A, 2)  # normalize
 
-        return A.squeeze(3)  # (b, N, N)  将第3个维度去掉
+        return A.squeeze(3)  # (b, N, N)  将第3个维度去掉   # [b, 4, 4]
 
 class GNN_module(nn.Module):
     def __init__(self, nway, input_dim, hidden_dim, num_layers, feature_type='dense'):
@@ -141,7 +141,7 @@ class GNN_module(nn.Module):
             adjacency_layer = self.adjacency_list[i]
             conv_block = self.graph_conv_list[i]
             A = adjacency_layer(x)
-            x_next = conv_block(x, A)
+            x_next = conv_block(x, A)       # [b, 4, 16]
             x_next = F.leaky_relu(x_next, 0.1)
 
             if self.feature_type == 'dense':
@@ -156,6 +156,6 @@ class GNN_module(nn.Module):
         # X_ = [X[i, :, :] for i in range(2)]
         # # print(X_[0])
         # numpy.savetxt("gnn_dist1.csv", X_[0].cpu().detach().numpy(), delimiter=',')
-        out = self.last_conv(x, A)
+        out = self.last_conv(x, A)      # [b, 4, nway]
 
-        return out[:, 0, :]
+        return out[:, 0, :]             # [b, nway]

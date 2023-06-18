@@ -2,7 +2,7 @@ import argparse
 
 def parser():
     parser = argparse.ArgumentParser(description='DLCV_final')
-    parser.add_argument('--todo', choices=['train', 'valid', 'test', 'visualize'], default='test',
+    parser.add_argument('--todo', choices=['train', 'valid', 'test', 'visualize'], default='train',
         help='what behavior want to do: train | valid | test')
     parser.add_argument('--dataset', default='MSTAR', help='the dataset to train')
     parser.add_argument('--model_type', default='gnn', help='model to use')
@@ -28,8 +28,8 @@ def parser():
     parser.add_argument('--load_dir', default='model_/3way_5shot_gnn_', help='the model to load')
     parser.add_argument('--output_dir', default='output', help='the folder to save output')
     parser.add_argument('--output_name', default='output.txt', help='filename of output')
-    parser.add_argument('--nway', default=3, type=int)
-    parser.add_argument('--shots', default=10, type=int)
+    parser.add_argument('--nway', default=5, type=int)
+    parser.add_argument('--shots', default=1, type=int)
     parser.add_argument('--freeze_cnn', action='store_true', help='whether to freeze cnn-embedding layer')
 
     return parser.parse_args()
