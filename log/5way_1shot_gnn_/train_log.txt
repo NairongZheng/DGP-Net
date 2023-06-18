@@ -1,0 +1,132 @@
+todo             : train
+dataset          : MSTAR
+model_type       : gnn
+pretrain         : False
+pretrain_dir     : 
+use_gpu          : 0
+seed             : 1
+batch_size       : 8
+lr               : 0.001
+max_iteration    : 100000
+log_interval     : 100
+eval_interval    : 1000
+early_stop       : 10
+early_stop_pretrain : 10
+test_dir         : 
+data_root        : data
+log_root         : log
+model_root       : model_
+affix            : 
+save             : False
+load             : False
+load_dir         : model_/3way_5shot_gnn_
+output_dir       : output
+output_name      : output.txt
+nway             : 5
+shots            : 1
+freeze_cnn       : False
+model_folder     : model_/5way_1shot_gnn_
+log_folder       : log/5way_1shot_gnn_
+gnnModel(
+  (cnn_feature): EmbeddingCNN(
+    (module_list): ModuleList(
+      (0): Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (1): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): ReLU(inplace=True)
+      (3): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (4): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (5): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (6): ReLU(inplace=True)
+      (7): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (8): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (9): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (10): ReLU(inplace=True)
+      (11): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (12): Conv2d(128, 64, kernel_size=(12, 12), stride=(1, 1), bias=False)
+      (13): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (14): ReLU(inplace=True)
+    )
+  )
+  (gnn): GNN(
+    (gnn_obj): GNN_module(
+      (adjacency_list): ModuleList(
+        (0): Adjacency_layer(
+          (module_list): ModuleList(
+            (0): Conv2d(69, 64, kernel_size=(1, 1), stride=(1, 1))
+            (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (2): LeakyReLU(negative_slope=0.01)
+            (3): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1))
+            (4): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (5): LeakyReLU(negative_slope=0.01)
+            (6): Conv2d(32, 1, kernel_size=(1, 1), stride=(1, 1))
+          )
+        )
+        (1): Adjacency_layer(
+          (module_list): ModuleList(
+            (0): Conv2d(85, 64, kernel_size=(1, 1), stride=(1, 1))
+            (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (2): LeakyReLU(negative_slope=0.01)
+            (3): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1))
+            (4): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (5): LeakyReLU(negative_slope=0.01)
+            (6): Conv2d(32, 1, kernel_size=(1, 1), stride=(1, 1))
+          )
+        )
+        (2): Adjacency_layer(
+          (module_list): ModuleList(
+            (0): Conv2d(101, 64, kernel_size=(1, 1), stride=(1, 1))
+            (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (2): LeakyReLU(negative_slope=0.01)
+            (3): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1))
+            (4): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (5): LeakyReLU(negative_slope=0.01)
+            (6): Conv2d(32, 1, kernel_size=(1, 1), stride=(1, 1))
+          )
+        )
+        (3): Adjacency_layer(
+          (module_list): ModuleList(
+            (0): Conv2d(117, 64, kernel_size=(1, 1), stride=(1, 1))
+            (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (2): LeakyReLU(negative_slope=0.01)
+            (3): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1))
+            (4): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (5): LeakyReLU(negative_slope=0.01)
+            (6): Conv2d(32, 1, kernel_size=(1, 1), stride=(1, 1))
+          )
+        )
+      )
+      (graph_conv_list): ModuleList(
+        (0): Graph_conv_block(
+          (weight): Linear(in_features=69, out_features=16, bias=True)
+          (bn): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+        (1): Graph_conv_block(
+          (weight): Linear(in_features=85, out_features=16, bias=True)
+          (bn): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+        (2): Graph_conv_block(
+          (weight): Linear(in_features=101, out_features=16, bias=True)
+          (bn): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+        (3): Graph_conv_block(
+          (weight): Linear(in_features=117, out_features=16, bias=True)
+          (bn): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (last_adjacency): Adjacency_layer(
+        (module_list): ModuleList(
+          (0): Conv2d(133, 64, kernel_size=(1, 1), stride=(1, 1))
+          (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (2): LeakyReLU(negative_slope=0.01)
+          (3): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1))
+          (4): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (5): LeakyReLU(negative_slope=0.01)
+          (6): Conv2d(32, 1, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+      (last_conv): Graph_conv_block(
+        (weight): Linear(in_features=133, out_features=5, bias=True)
+      )
+    )
+  )
+)
