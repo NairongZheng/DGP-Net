@@ -8,6 +8,7 @@ import random
 import numpy as np
 from argument import print_args, parser
 from utils import create_logger, mkdir
+import tqdm
 
 def main(args):
     if args.todo == 'train' or args.todo == 'valid':
