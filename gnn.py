@@ -15,17 +15,17 @@ class Graph_conv_block(nn.Module):
         else:
             self.bn = None
 
-    def forward(self, x, A):
+    def forward(self, x, A):        # x[b, nway*shots+1, 64+nway]; A[b, nway*shots+1, nway*shots+1]
 
-        x_next = torch.matmul(A, x)  # (b, N, input_dim)  两个张量矩阵相乘
-        x_next = self.weight(x_next)  # (b, N, output_dim)  加权
+        x_next = torch.matmul(A, x)  # (b, N, input_dim)  两个张量矩阵相乘  # x_next[b, nway*shots+1, 64+nway]
+        x_next = self.weight(x_next)  # (b, N, output_dim)  加权        # x_next[b, nway*shots+1, output_dim]
 
         # 逐点非线性处理
         if self.bn is not None:
-            x_next = torch.transpose(x_next, 1, 2)  # (b, output_dim, N)  矩阵转置
-            x_next = x_next.contiguous()  # 使元素连续方便接下来的操作
+            x_next = torch.transpose(x_next, 1, 2)  # (b, output_dim, N)  矩阵转置      x_next[b, output_dim, nway*shots+1]
+            x_next = x_next.contiguous()  # 使元素连续方便接下来的操作  # 废话, 干什么呢
             x_next = self.bn(x_next)
-            x_next = torch.transpose(x_next, 1, 2)  # (b, N, output)
+            x_next = torch.transpose(x_next, 1, 2)  # (b, N, output)        x_next[b, nway*shots+1, output_dim]
 
         return x_next
 
@@ -50,25 +50,25 @@ class Adjacency_layer(nn.Module):
         #  多层神经网络MLP，计算两顶点之间的相似度
         self.module_list = nn.ModuleList(module_list)
 
-    def forward(self, x):       # [b, 4, 67]
-        X_i = x.unsqueeze(2)  # (b, N , 1, input_dim)  在第2个维度上增加一个维度
-        X_j = torch.transpose(X_i, 1, 2)  # (b, 1, N, input_dim)
+    def forward(self, x):
+        X_i = x.unsqueeze(2)  # [b, nway*shots+1, 1, 64+nway]  在第2个维度上增加一个维度
+        X_j = torch.transpose(X_i, 1, 2)  # [b, 1, nway*shots+1, 64+nway]
 
-        phi = torch.abs(X_i - X_j)  # (b, N, N, input_dim)
+        phi = torch.abs(X_i - X_j)  # [b, nway*shots+1, nway*shots+1, 64+nway]
 
-        phi = torch.transpose(phi, 1, 3)  # (b, input_dim, N, N)
+        phi = torch.transpose(phi, 1, 3)  # [b, 64+nway, nway*shots+1, nway*shots+1]
 
         A = phi
 
         for l in self.module_list:
-            A = l(A)
+            A = l(A)                    # [b, 1, nway*shots+1, nway*shots+1]
         # (b, 1, N, N)
 
-        A = torch.transpose(A, 1, 3)  # (b, N, N, 1)
+        A = torch.transpose(A, 1, 3)  # [b, nway*shots+1, nway*shots+1, 1]
 
-        A = F.softmax(A, 2)  # normalize
+        A = F.softmax(A, 2)  # normalize        # 为什么softmax要对第二维做？
 
-        return A.squeeze(3)  # (b, N, N)  将第3个维度去掉   # [b, 4, 4]
+        return A.squeeze(3)  # (b, N, N)  将第3个维度去掉   # [b, nway*shots+1, nway*shots+1]
 
 class GNN_module(nn.Module):
     def __init__(self, nway, input_dim, hidden_dim, num_layers, feature_type='dense'):
@@ -135,13 +135,13 @@ class GNN_module(nn.Module):
         self.last_conv = last_conv
 
 
-    def forward(self, x):
+    def forward(self, x):           # [b, nway*shots+1, 64+nway]
         for i, _ in enumerate(self.adjacency_list):
 
-            adjacency_layer = self.adjacency_list[i]
-            conv_block = self.graph_conv_list[i]
+            adjacency_layer = self.adjacency_list[i]        # 用来生成邻接矩阵A的网络
+            conv_block = self.graph_conv_list[i]            # 用来更新图的网络
             A = adjacency_layer(x)
-            x_next = conv_block(x, A)       # [b, 4, 16]
+            x_next = conv_block(x, A)       # [b, nway*shots+1, output_dim]
             x_next = F.leaky_relu(x_next, 0.1)
 
             if self.feature_type == 'dense':
@@ -156,6 +156,6 @@ class GNN_module(nn.Module):
         # X_ = [X[i, :, :] for i in range(2)]
         # # print(X_[0])
         # numpy.savetxt("gnn_dist1.csv", X_[0].cpu().detach().numpy(), delimiter=',')
-        out = self.last_conv(x, A)      # [b, 4, nway]
+        out = self.last_conv(x, A)      # [b, nway*shots+1, nway]
 
-        return out[:, 0, :]             # [b, nway]
+        return out[:, 0, :]             # [b, nway]     # 把前面数据uniform_pad那个东西拿出来啦

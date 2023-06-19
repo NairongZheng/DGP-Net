@@ -41,7 +41,7 @@ class GNN(myModel):
             num_layers=graph_conv_layer, 
             feature_type='dense')  # forward
 
-    def forward(self, inputs):
+    def forward(self, inputs):          # [b, nway*shots+1, 64+nway]
         logits = self.gnn_obj(inputs).squeeze(-1)       # [b, nway]
 
         return logits
@@ -68,27 +68,27 @@ class gnnModel(myModel):
         # self.cnn_feature.freeze_weight()
         # for i in range(self.batchsize):
         #     self.cnn_feature[i].freeze_weight()
-        [x, _, _, _, xi, label_yi, one_hot_yi, _] = data    # x[b, c, 100, 100]; xi[b, nway, c, 100, 100]; label_yi[b, nway]; one_hot_yi[b, 3, 3]
+        [x, _, _, _, xi, label_yi, one_hot_yi, _] = data    # x[b, c, 100, 100]; xi[b, nway*shots, c, 100, 100]; label_yi[b, nway*shots]; one_hot_yi[b, nway*shots, nway]
 
-        z = self.cnn_feature(x)     # [b, 64]
-        zi = [self.cnn_feature(xi[:, i, :, :, :]) for i in range(xi.size(1))]   # zi_i[b, 64]
+        z = self.cnn_feature(x)     # [b, 64]; q_set的特征
+        zi = [self.cnn_feature(xi[:, i, :, :, :]) for i in range(xi.size(1))]   # zi_i[b, 64]; s_set的特征
 
-        zi = torch.stack(zi, dim=1)     # zi[b, nway, 64]
+        zi = torch.stack(zi, dim=1)     # zi[b, nway*shots, 64]; s_set的特征
 
         # follow the paper, concatenate the information of labels to input features
         uniform_pad = torch.FloatTensor(one_hot_yi.size(0), 1, one_hot_yi.size(2)).fill_(
-            1.0/one_hot_yi.size(2))
-        uniform_pad = tensor2cuda(uniform_pad)      # [b, 1, 3]
+            1.0/one_hot_yi.size(2))         # 构造了一个值为1/nway, shape为[b, 1, nway]的张量
+        uniform_pad = tensor2cuda(uniform_pad)      # [b, 1, nway]
 
-        labels = torch.cat([uniform_pad, one_hot_yi], dim=1)    # [b, 4, 3]
-        features = torch.cat([z.unsqueeze(1), zi], dim=1)
+        labels = torch.cat([uniform_pad, one_hot_yi], dim=1)    # [b, nway*shots+1, nway]
+        features = torch.cat([z.unsqueeze(1), zi], dim=1)       # [b, nway*shpts+1, 64]; q_set跟s_set的特征concatenate
 
-        nodes_features = torch.cat([features, labels], dim=2)   # [b, 4, 67]
+        nodes_features = torch.cat([features, labels], dim=2)   # [b, nway*shots+1, 64+nway]
 
         out_logits = self.gnn(inputs=nodes_features)            # [b, nway]
         logsoft_prob = F.log_softmax(out_logits, dim=1)         # [b, nway]
-
-
+        # q_set跟s_set的特征、q瞎猜的概率(平均)、s_set的真值。放进去卷积跟图卷积一顿操作
+        # 更新q猜的概率，再跟q真值做损失
         return logsoft_prob
 
 

@@ -284,7 +284,7 @@ class self_DataLoader(Dataset):
 
             positive_class = random.randint(0, nway - 1)
 
-            label2class = torch.LongTensor(nway)
+            label2class = torch.LongTensor(nway)                    # 没用？
 
             single_xi = []
             single_one_hot_yi = []
@@ -296,7 +296,7 @@ class self_DataLoader(Dataset):
                 if j == positive_class:
                     ### without loss of generality, we assume the 0th 
                     ### sampled  class is the target class
-                    sampled_data = random.sample(data_dict[_class], num_shots+1)
+                    sampled_data = random.sample(data_dict[_class], num_shots+1)        # 选了shots+1个样本
                     x.append(sampled_data[0])
                     label_y.append(torch.LongTensor([j]))
 
@@ -308,10 +308,10 @@ class self_DataLoader(Dataset):
 
                     shots_data = sampled_data[1:]
                 else:
-                    shots_data = random.sample(data_dict[_class], num_shots)
+                    shots_data = random.sample(data_dict[_class], num_shots)        # data_dict: 其中一类的所有样本; shots_data: 其中shot个样本
 
-                single_xi += shots_data
-                single_label_yi.append(torch.LongTensor([j]).repeat(num_shots))
+                single_xi += shots_data             # 存所有的shots data
+                single_label_yi.append(torch.LongTensor([j]).repeat(num_shots))     # 存所有shots 的标签
                 one_hot = torch.zeros(nway)
                 one_hot[j] = 1.0
                 single_one_hot_yi.append(one_hot.repeat(num_shots, 1))
@@ -319,7 +319,7 @@ class self_DataLoader(Dataset):
                 label2class[j] = _class
 
             shuffle_index = torch.randperm(num_shots*nway)
-            xi.append(torch.stack(single_xi, dim=0)[shuffle_index])
+            xi.append(torch.stack(single_xi, dim=0)[shuffle_index])             # 把nway*shots (support set)所有样本打乱拼接
             label_yi.append(torch.cat(single_label_yi, dim=0)[shuffle_index])
             one_hot_yi.append(torch.cat(single_one_hot_yi, dim=0)[shuffle_index])
 
