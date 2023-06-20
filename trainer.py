@@ -45,6 +45,46 @@ class GNN(myModel):
         logits = self.gnn_obj(inputs).squeeze(-1)       # [b, nway]
 
         return logits
+
+
+class SelfAttention(nn.Module):
+    def __init__(self, input_size, hidden_size):
+        super(SelfAttention, self).__init__()
+        
+        self.hidden_size = hidden_size
+        
+        # 定义查询、键和值的线性变换层
+        self.query_layer = nn.Linear(input_size, hidden_size)
+        self.key_layer = nn.Linear(input_size, hidden_size)
+        self.value_layer = nn.Linear(input_size, hidden_size)
+        
+        # 缩放因子
+        self.scale = torch.sqrt(torch.FloatTensor([hidden_size]))
+        
+    def forward(self, inputs):
+        # 输入维度：[batch_size, sequence_length, input_size]
+        
+        # 获取batch size和sequence length
+        batch_size, sequence_length, input_size = inputs.size()
+        
+        # 对输入进行线性变换得到查询、键和值
+        queries = self.query_layer(inputs)
+        keys = self.key_layer(inputs)
+        values = self.value_layer(inputs)
+        
+        # 注意力得分
+        attention_scores = torch.matmul(queries, keys.transpose(1, 2))
+        attention_scores = attention_scores / 8
+        
+        # 注意力权重
+        attention_weights = torch.softmax(attention_scores, dim=2)
+        
+        # 加权和
+        weighted_sum = torch.matmul(attention_weights, values)
+        
+        # 输出维度：[batch_size, sequence_length, hidden_size]
+        return weighted_sum
+
       
 class gnnModel(myModel):
     def __init__(self, nway, batchsize, shots):
@@ -61,6 +101,11 @@ class gnnModel(myModel):
 
         self.cnn_feature = EmbeddingCNN(image_size, cnn_feature_size, cnn_hidden_dim, cnn_num_layers)
 
+        # self.convx1 = nn.Conv1d(1, 64, 3, 1, 1, bias=False)
+        # self.convx2 = nn.Conv1d(64, 1, 3, 1, 1, bias=False)
+        # self.linear1 = nn.Linear(67, 3)
+
+        # self.att = SelfAttention(67, 64)
 
         self.gnn = GNN(cnn_feature_size, gnn_feature_size, nway)
 
@@ -85,7 +130,20 @@ class gnnModel(myModel):
 
         nodes_features = torch.cat([features, labels], dim=2)   # [b, nway*shots+1, 64+nway]
 
+        # nodes_features_att = self.att(nodes_features)
+
         out_logits = self.gnn(inputs=nodes_features)            # [b, nway]
+
+
+        # new_t = torch.cat([z, out_logits], dim=1)               # [b, 64+nway]
+        # new_t = new_t.unsqueeze(1)                              # [b, 1, 64+nway]
+        # new_t = self.convx1(new_t)                              # [b, 64, 64+nway]
+        # new_t = self.convx2(new_t)                              # [b, 1, 64+nway]
+        # new_t = new_t.squeeze(1)                                # [b, 64+nway]
+        # new_t = self.linear1(new_t)
+        # logsoft_prob = F.log_softmax(new_t, dim=1)         # [b, nway]
+
+
         logsoft_prob = F.log_softmax(out_logits, dim=1)         # [b, nway]
         # q_set跟s_set的特征、q瞎猜的概率(平均)、s_set的真值。放进去卷积跟图卷积一顿操作
         # 更新q猜的概率，再跟q真值做损失

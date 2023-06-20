@@ -47,6 +47,11 @@ gnnModel(
       (14): ReLU(inplace=True)
     )
   )
+  (att): SelfAttention(
+    (query_layer): Linear(in_features=67, out_features=64, bias=True)
+    (key_layer): Linear(in_features=67, out_features=64, bias=True)
+    (value_layer): Linear(in_features=67, out_features=64, bias=True)
+  )
   (gnn): GNN(
     (gnn_obj): GNN_module(
       (adjacency_list): ModuleList(
